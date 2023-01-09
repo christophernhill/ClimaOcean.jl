@@ -18,7 +18,18 @@ using JLD2
 # "Ri-based" --- uses calibrated defaults in Oceananigans
 ri_based = RiBasedVerticalDiffusivity() 
 
+##
+## USE CONVECTIVE ADJUSTMENT FOR NOW
+cadj_based = ConvectiveAdjustmentVerticalDiffusivity(convective_κz = 1,
+                                                     background_κz = 1e-5,
+                                                     convective_νz = 1e-3,
+                                                     background_νz = 1e-4)
+boundary_layer_turbulence_closure = cadj_based
+##
+
+
 # CATKE with calibrated parameters loaded from file
+#=
 neutral_default_mixing_length_parameters = (Cᵇu = Inf, Cᵇc = Inf, Cᵇe = Inf,
                                             Cˢu = Inf, Cˢc = Inf, Cˢe = Inf,
                                             CᴷRiᶜ = Inf, CᴷRiʷ = 0.0)
@@ -38,6 +49,7 @@ catke = closure_with_parameters(neutral_catke, catke_parameters)
 
 # Choose closure
 boundary_layer_turbulence_closure = catke
+=#
 
 @show boundary_layer_turbulence_closure
 
@@ -46,7 +58,7 @@ boundary_layer_turbulence_closure = catke
 #####
 
 start_time = 345days
-stop_time = start_time + 2years
+stop_time  = start_time + 1hour
 with_isopycnal_skew_symmetric_diffusivity = true
 
 simulation = one_degree_near_global_simulation(; start_time, stop_time,
@@ -59,11 +71,12 @@ simulation = one_degree_near_global_simulation(; start_time, stop_time,
 )
 
 # Define output
-slices_save_interval = 2day
+# slices_save_interval = 2day
+slices_save_interval = 1hour
 fields_save_interval = 10days
 Nx, Ny, Nz = size(simulation.model.grid)
 
-dir = "/storage1/greg" 
+dir = "../output" 
 closure_name = typeof(boundary_layer_turbulence_closure).name.wrapper
 output_prefix = "near_global_$(Nx)_$(Ny)_$(Nz)_$closure_name"
 with_isopycnal_skew_symmetric_diffusivity || (output_prefix *= "_no_gm")
@@ -136,7 +149,8 @@ simulation.Δt = 1minute
 simulation.stop_time = time(simulation) + 2days
 run!(simulation)
 
-simulation.stop_time = start_time + 1.2years
+# simulation.stop_time = start_time + 1.2years
+simulation.stop_time = start_time + 3days
 simulation.Δt = 20minutes
 run!(simulation)
 
